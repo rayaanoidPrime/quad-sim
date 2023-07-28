@@ -23,7 +23,14 @@ class Quadcopter():
     # From Quadcopter Dynamics, Simulation, and Control by Andrew Gibiansky
     def __init__(self,quad,gravity=9.81,b=0.847):
         #b = Torque/Thrust 
-
+        self.aero_df = quad['aero_df']
+        self.no_of_aero_surfaces = self.aero_df.shape[0]
+        self.cg = quad['cg']
+        self.rho = quad['rho']
+        self.Vinf = quad['Vinf']
+        self.qinf = 0.5*self.rho*self.Vinf*self.Vinf
+        self.Sref = quad['Sref']
+        self.Cref = quad['Cref']
         self.L = quad['L']
         self.g = gravity
         self.b = b
@@ -61,6 +68,20 @@ class Quadcopter():
 
     def wrap_angle(self,val):
         return( ( val + np.pi) % (2 * np.pi ) - np.pi )
+    
+    #Todo - Get Lift for AoA from orientation of quad and Vinf from speed 
+    def get_lift(self , aero_df):
+        L = 0.0 
+        for i in range(len(aero_df)):
+            L += aero_df.iloc[i]["CL"]*self.qinf*self.Sref
+        return L
+    #Todo - Get My for AoA from orientation of quad and Vinf from speed 
+    def get_moment(self, aero_df):
+        My = 0.0
+        for i in range(len(aero_df)):
+            My += (aero_df.iloc[i]['Cmac'] + (self.cg[0]-aero_df.iloc[i]['x_ac'])*aero_df.iloc[i]["CL"])*self.qinf*self.Sref*self.Cref
+        return My
+        
 
     def state_dot(self, time, state):
         state_dot = np.zeros(12)
@@ -69,7 +90,8 @@ class Quadcopter():
         state_dot[1] = self.state[4]
         state_dot[2] = self.state[5]
         # The acceleration
-        x_dotdot = np.array([0,0,-self.g]) + np.dot(self.rotation_matrix(self.state[6:9]),np.array([0,0,(self.m1.thrust + self.m2.thrust + self.m3.thrust + self.m4.thrust)]))/self.m        
+        tot_lift = self.get_lift(self.aero_df)
+        x_dotdot = np.array([0,0,-self.g]) + np.dot(self.rotation_matrix(self.state[6:9]),np.array([0,0,(self.m1.thrust + self.m2.thrust + self.m3.thrust + self.m4.thrust)]))/self.m  + np.array([0,0,tot_lift])/self.m      
         state_dot[3] = x_dotdot[0]
         state_dot[4] = x_dotdot[1]
         state_dot[5] = x_dotdot[2]
@@ -79,7 +101,8 @@ class Quadcopter():
         state_dot[8] = self.state[11]
         # The angular accelerations
         omega = self.state[9:12]
-        tau = np.array([self.L*(self.m1.thrust-self.m3.thrust), self.L*(self.m2.thrust-self.m4.thrust), self.b*(self.m1.thrust-self.m2.thrust+self.m3.thrust-self.m4.thrust)])
+        tot_My = self.get_moment(self.aero_df)
+        tau = np.array([self.L*(self.m1.thrust-self.m3.thrust), self.L*(self.m2.thrust-self.m4.thrust) + tot_My, self.b*(self.m1.thrust-self.m2.thrust+self.m3.thrust-self.m4.thrust)])
         omega_dot = np.dot(self.invI, (tau - np.cross(omega, np.dot(self.I,omega))))
         state_dot[9] = omega_dot[0]
         state_dot[10] = omega_dot[1]

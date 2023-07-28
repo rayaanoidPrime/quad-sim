@@ -1,16 +1,45 @@
+import argparse
+import os
 import quadcopter,gui,controller
+import pandas as pd
+from LOD_parser import lod_parser,get_coeffs
+from Mass_props_parser import mass_props_parser
+from Vspaero_parser import vsp_parser
 
 # Constants
 QUAD_DYNAMICS_UPDATE = 0.002 # seconds
 CONTROLLER_DYNAMICS_UPDATE = 0.005 # seconds
 run = True
 
+
 def Point2Point():
+    LOD_df = lod_parser(LOD_filepath)
+    wing_mass_props_df,tot_mass_props_df = mass_props_parser(mass_props_filepath)
+    input_df = vsp_parser(vspaero_filepath)
+
+    Sref = input_df['Sref'][0]
+    Cref = input_df['Cref'][0]
+    rho = input_df['Rho'][0]
+    Vinf = input_df['Vinf'][0]
+    m = tot_mass_props_df["Mass"]
+    x_cg = tot_mass_props_df["cgX"]
+    y_cg = tot_mass_props_df["cgY"]
+    z_cg = tot_mass_props_df["cgZ"]
+    Ixx = tot_mass_props_df["Ixx"]
+    Iyy = tot_mass_props_df["Iyy"]
+    Izz = tot_mass_props_df["Izz"]
+    Ixy = tot_mass_props_df["Ixy"]
+    Ixz = tot_mass_props_df["Ixz"]
+    Iyz = tot_mass_props_df["Iyz"]
+
+    aero_df = get_coeffs(x_cg , LOD_df)
+
     # Set goals to go to
     GOALS = [(1,1,1),(1,2,4),(-1,-1,2),(-1,1,4)]
     YAWS = [0,3.14,-1.54,1.54]
     # Define the quadcopters
-    QUADCOPTER={'position':[1,0,0],'orientation':[0,0,0],'L':0.3,'r':0.1,'prop_size':[10,4.5],'weight':1.2}
+    QUADCOPTER={'position':[1,0,0],'orientation':[0,0,0],'L':0.3,'r':0.1,'prop_size':[10,4.5],'weight':1.2 , 
+                'aero_df':aero_df , 'cg':[x_cg,y_cg,z_cg] , 'rho' : rho , 'Vinf' : Vinf , 'Sref' : Sref , 'Cref' : Cref}
     # Controller parameters
     CONTROLLER_PARAMETERS = {'Motor_limits':[4000,10000],
                         'Tilt_limits':[-10,10],
@@ -41,6 +70,30 @@ def Point2Point():
     quad.stop_thread()
     ctrl.stop_thread()
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Quadcopter Simulator")
+    parser.add_argument("--OpenVSP-folder", type=str, default=-1.0, help='Folder path where .LOD , MassProps.txt and .vspaero files are located ')
+    return parser.parse_args()
 
 if __name__ == "__main__":
+
+    args = parse_args()
+    # Extract file paths based on the provided folder path
+    base_folder = args.OpenVSP_folder.strip()
+ 
+    LOD_filename = [file for file in os.listdir(base_folder) if file.endswith(".lod")]
+    mass_props_filename = [file for file in os.listdir(base_folder) if file.endswith("_MassProps.txt")]
+    vspaero_filename = [file for file in os.listdir(base_folder) if file.endswith(".vspaero")]
+
+    # Check if exactly one file is found for each extension
+    if len(LOD_filename) > 1 or len(mass_props_filename) > 1 or len(vspaero_filename) > 1:
+        raise ValueError("Expected exactly one file with .lod, _MassProps.txt, and .vspaero extension in the folder.")
+    if len(LOD_filename) == 0 or len(mass_props_filename) == 0 or len(vspaero_filename) == 0:
+        raise ValueError("Expected file with .lod, _MassProps.txt, and .vspaero extension in the folder.")
+
+    # Build the complete file paths
+    LOD_filepath = os.path.join(base_folder, LOD_filename[0])
+    mass_props_filepath = os.path.join(base_folder, mass_props_filename[0])
+    vspaero_filepath = os.path.join(base_folder, vspaero_filename[0])
+
     Point2Point()
