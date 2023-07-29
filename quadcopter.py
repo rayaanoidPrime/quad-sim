@@ -24,6 +24,7 @@ class Quadcopter():
     def __init__(self,quad,gravity=9.81,b=0.847):
         #b = Torque/Thrust 
         self.aero_df = quad['aero_df']
+        self.polar_df = quad['polar_df']
         self.no_of_aero_surfaces = self.aero_df.shape[0]
         self.cg = quad['cg']
         self.rho = quad['rho']
@@ -75,6 +76,15 @@ class Quadcopter():
         for i in range(len(aero_df)):
             L += aero_df.iloc[i]["CL"]*self.qinf*self.Sref
         return L
+    
+    def get_drag(self , polar_df):
+        D = 0.0
+        if len(polar_df) > 1:
+            m = (polar_df.iloc[0]["CDtot"] - polar_df.iloc[1]["CDtot"])/(polar_df.iloc[0]["AoA"] - polar_df.iloc[1]["AoA"])
+            c = polar_df.loc[polar_df["AoA"] == 0.0 , 'CDtot'][0]
+            AoA = self.get_orientation()[0]
+            return (m*AoA + c)*self.qinf*self.Sref
+
     #Todo - Get My for AoA from orientation of quad and Vinf from speed 
     def get_moment(self, aero_df):
         My = 0.0
@@ -91,7 +101,8 @@ class Quadcopter():
         state_dot[2] = self.state[5]
         # The acceleration
         tot_lift = self.get_lift(self.aero_df)
-        x_dotdot = np.array([0,0,-self.g]) + np.dot(self.rotation_matrix(self.state[6:9]),np.array([0,0,(self.m1.thrust + self.m2.thrust + self.m3.thrust + self.m4.thrust)]))/self.m  + np.array([0,0,tot_lift])/self.m      
+        tot_drag = self.get_drag(self.polar_df)
+        x_dotdot = np.array([0,0,-self.g]) + np.dot(self.rotation_matrix(self.state[6:9]),np.array([0,0,(self.m1.thrust + self.m2.thrust + self.m3.thrust + self.m4.thrust)]))/self.m  + np.array([0,0,tot_lift])/self.m + np.dot(self.rotation_matrix(self.state[6:9]),np.array([-tot_drag,0,0]))    
         state_dot[3] = x_dotdot[0]
         state_dot[4] = x_dotdot[1]
         state_dot[5] = x_dotdot[2]
