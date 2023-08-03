@@ -77,8 +77,8 @@ class Controller_PID_Point2Point():
 
         m1 = 9000
         m2 = 9000
-        m3 = 5000
-        m4 = 5000
+        m3 = 9000
+        m4 = 9000
 
 
         M = np.clip([m1,m2,m3,m4],self.MOTOR_LIMITS[0],self.MOTOR_LIMITS[1])

@@ -97,6 +97,7 @@ def lod_parser(file_path):
     df_sorted.set_index('Key', inplace=True)
     df_sorted = df_sorted.astype({col: float for col in df_sorted.columns if col != 'Name'  and col != 'Comp' and col != 'Component-Name'})
     df_sorted['Comp'] = df_sorted['Comp'].astype(int)
+    df_sorted['AoA'] = df_sorted['AoA']*3.14/180
     return df_sorted
 
 

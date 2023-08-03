@@ -27,7 +27,7 @@ def vsp_parser(file_path):
     data_str = ''.join(data)
     df = parse_text(data_str)
     df = df.astype({col: float for col in df.columns if col != 'Preconditioner'  and col != 'Karman-Tsien Correction' and col != 'Symmetry' and col != 'AoA'})
-    df['AoA'] = df["AoA"].apply(lambda x: [float(val) for val in x.split(",")])
+    df['AoA'] = df["AoA"].apply(lambda x: [float(val)*3.14/180 for val in x.split(",")])
     return df
 
 

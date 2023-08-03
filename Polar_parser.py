@@ -25,6 +25,7 @@ def polar_parser(file_path):
     data_str = ''.join(data)
     df = parse_text(data_str)
     df_selected = df[["AoA" , "CDtot" ]]
+    df_selected['AoA'] = df_selected['AoA']*3.14/180
     return df_selected
 
 if __name__ == "__main__":

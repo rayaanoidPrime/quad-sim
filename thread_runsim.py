@@ -40,7 +40,7 @@ def Point2Point():
     GOALS = [(1,1,1),(1,2,4),(-1,-1,2),(-1,1,4)]
     YAWS = [0,3.14,-1.54,1.54]
     # Define the quadcopters
-    QUADCOPTER={'position':[1,0,0],'orientation':[0,0,0],'L':0.3,'r':0.1,'prop_size':[10,4.5],'weight':1.2 , 
+    QUADCOPTER={'position':[2,-2,3],'orientation':[-0.523599/3,0,0],'L':0.3,'r':0.1,'prop_size':[10,4.5],'weight':3.2 , 
                 'aero_df':aero_df , 'polar_df': polar_df,  'cg':[x_cg,y_cg,z_cg] , 'rho' : rho , 'Vinf' : Vinf , 'Sref' : Sref , 'Cref' : Cref}
     # Controller parameters
     CONTROLLER_PARAMETERS = {'Motor_limits':[4000,10000],

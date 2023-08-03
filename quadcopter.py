@@ -81,16 +81,22 @@ class Quadcopter():
         D = 0.0
         if len(polar_df) > 1:
             m = (polar_df.iloc[0]["CDtot"] - polar_df.iloc[1]["CDtot"])/(polar_df.iloc[0]["AoA"] - polar_df.iloc[1]["AoA"])
-            c = polar_df.loc[polar_df["AoA"] == 0.0 , 'CDtot'][0]
+            if 0.0 in polar_df['AoA'].values:
+                c = polar_df.loc[polar_df["AoA"] == 0.0 , 'CDtot'][0]
+            else:
+                c = polar_df.iloc[0]["CDtot"] - m*polar_df.iloc[0]["AoA"]
             AoA = self.get_orientation()[0]
-            return (m*AoA + c)*self.qinf*self.Sref
+            D+= (m*AoA + c)*self.qinf*self.Sref
+        else:
+            D = polar_df.iloc[0]["CDtot"]*self.qinf*self.Sref
+        return D
 
     #Todo - Get My for AoA from orientation of quad and Vinf from speed 
     def get_moment(self, aero_df):
-        My = 0.0
+        M = 0.0
         for i in range(len(aero_df)):
-            My += (aero_df.iloc[i]['Cmac'] + (self.cg[0]-aero_df.iloc[i]['x_ac'])*aero_df.iloc[i]["CL"])*self.qinf*self.Sref*self.Cref
-        return My
+            M += (aero_df.iloc[i]['Cmac'] + (self.cg[0]-aero_df.iloc[i]['x_ac'])*aero_df.iloc[i]["CL"])*self.qinf*self.Sref*self.Cref 
+        return M
         
 
     def state_dot(self, time, state):
@@ -102,7 +108,7 @@ class Quadcopter():
         # The acceleration
         tot_lift = self.get_lift(self.aero_df)
         tot_drag = self.get_drag(self.polar_df)
-        x_dotdot = np.array([0,0,-self.g]) + np.dot(self.rotation_matrix(self.state[6:9]),np.array([0,0,(self.m1.thrust + self.m2.thrust + self.m3.thrust + self.m4.thrust)]))/self.m  + np.array([0,0,tot_lift])/self.m + np.dot(self.rotation_matrix(self.state[6:9]),np.array([-tot_drag,0,0]))    
+        x_dotdot = np.array([0,0,-self.g]) + np.dot(self.rotation_matrix(self.state[6:9]),np.array([0,0,(self.m1.thrust + self.m2.thrust + self.m3.thrust + self.m4.thrust)]))/self.m  + np.array([0,0,tot_lift])/self.m  + np.dot(self.rotation_matrix(self.state[6:9]),np.array([-tot_drag,0,0]))    
         state_dot[3] = x_dotdot[0]
         state_dot[4] = x_dotdot[1]
         state_dot[5] = x_dotdot[2]
@@ -112,8 +118,9 @@ class Quadcopter():
         state_dot[8] = self.state[11]
         # The angular accelerations
         omega = self.state[9:12]
-        tot_My = self.get_moment(self.aero_df)
-        tau = np.array([self.L*(self.m1.thrust-self.m3.thrust), self.L*(self.m2.thrust-self.m4.thrust) + tot_My, self.b*(self.m1.thrust-self.m2.thrust+self.m3.thrust-self.m4.thrust)])
+        tot_Mx = self.get_moment(self.aero_df)
+        print(tot_Mx)
+        tau = np.array([self.L*(self.m1.thrust-self.m3.thrust)- tot_Mx, self.L*(self.m2.thrust-self.m4.thrust) , self.b*(self.m1.thrust-self.m2.thrust+self.m3.thrust-self.m4.thrust)])
         omega_dot = np.dot(self.invI, (tau - np.cross(omega, np.dot(self.I,omega))))
         state_dot[9] = omega_dot[0]
         state_dot[10] = omega_dot[1]
