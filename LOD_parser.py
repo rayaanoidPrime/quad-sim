@@ -1,5 +1,6 @@
 import pandas as pd
 import io
+import numpy as np
 
 
 
@@ -101,35 +102,67 @@ def lod_parser(file_path):
     return df_sorted
 
 
-def get_coeffs(x_cg , df_sorted):
+def get_cm_df(input_df):
+    output_data = {'Comp': [], 'Component-Name': [], 'Slope': [], 'Y-Intercept': []}
+    
+    # Group the DataFrame by component and process each group
+    grouped = input_df.groupby('Comp')
+    for comp, group in grouped:
+        aoa = group['AoA']
+        cmy = group['Cmy']
+        
+        # Calculate the slope and y-intercept using np.polyfit
+        slope, intercept = np.polyfit(aoa, cmy, 1)
+        
+        # Add the data to the output dictionary
+        output_data['Comp'].append(comp)
+        output_data['Component-Name'].append(group['Component-Name'].iloc[0])
+        output_data['Slope'].append(slope)
+        output_data['Y-Intercept'].append(intercept)
+    
+    # Create a new DataFrame from the output dictionary
+    output_df = pd.DataFrame(output_data)
+    return output_df
+
+
+def get_coeffs(x_cg , df_sorted , wing_mass_props_df):
     df = df_sorted
 
     # Step 1: Group by 'Comp'
     groups = df.groupby('Comp')
 
-    # Step 2 and 3: Calculate Cmac and x_ac for each group
+    # Step 2 and 3: Calculate Cmac and x_ac and dCl_dalpha and CL_0 for each group
     for comp, group in groups:
         CL_1 = group['CL'].iloc[0]
-        CL_2 = group['CL'].iloc[1]
+        # CL_2 = group['CL'].iloc[1]
+        CL_2 = 0
         Cmy_1 = group['Cmy'].iloc[0]
-        Cmy_2 = group['Cmy'].iloc[1]
+        # Cmy_2 = group['Cmy'].iloc[1]
+        Cmy_2 = 0
+        AoA_1 = group['AoA'].iloc[0]
+        # AoA_2 = group['AoA'].iloc[1]
+        AoA_2 = 0
         
+        dCl_dalpha = (CL_1 - CL_2)/(AoA_1 - AoA_2)
+        CL_0 = CL_1 - dCl_dalpha*AoA_1
         Cmac = (CL_1 * Cmy_2 - CL_2 * Cmy_1) / (CL_1 - CL_2)
-        x_ac = x_cg - (Cmy_1 - Cmac) / CL_1
+        x_ac = wing_mass_props_df.iloc[comp-1]['cgX']
         
         df.loc[df['Comp'] == comp, 'Cmac'] = Cmac
         df.loc[df['Comp'] == comp, 'x_ac'] = x_ac
+        df.loc[df['Comp'] == comp , 'dCl_dalpha'] = dCl_dalpha
+        df.loc[df['Comp'] == comp, 'CL_0'] = CL_0
 
     # Step 4: Create the new dataframe with the desired columns
     result_df = df.drop_duplicates('Comp').reset_index(drop=True)
-    result_df = result_df[['Comp', 'Component-Name', 'Cmac', 'x_ac', 'AoA', 'CL', 'CDi']]
+    result_df = result_df[['Comp', 'Component-Name', 'Cmac', 'x_ac', 'AoA', 'CL', 'CDi','dCl_dalpha','CL_0' ]]
     return result_df
 
 
 
 if __name__ == "__main__":
     # Read the data from the file
-    file_path = "C:/Users/Rayaan_Ghosh/Desktop/Airbus/OpenVSP/assignment-5_DegenGeom.lod"
+    file_path = "C:/Users/Rayaan_Ghosh/Desktop/Airbus/OpenVSP/4th_config_2.0-20230809T165813Z-001/4th_config_2.0/4thconfig_DegenGeom.lod"
     with open(file_path, 'r') as file:
         data = file.readlines()
 
@@ -160,4 +193,8 @@ if __name__ == "__main__":
     df_sorted = dataframes.sort_values(by='Comp')
     df_sorted['Key'] = range(len(df_sorted))
     df_sorted.set_index('Key', inplace=True)
-    print(df_sorted)
+    df_sorted = df_sorted.astype({col: float for col in df_sorted.columns if col != 'Name'  and col != 'Comp' and col != 'Component-Name'})
+    df_sorted['Comp'] = df_sorted['Comp'].astype(int)
+    df_sorted['AoA'] = df_sorted['AoA']*3.14/180
+    cm_df = get_cm_df(df_sorted)
+    print(cm_df)

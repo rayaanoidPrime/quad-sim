@@ -47,9 +47,17 @@ class GUI():
             position = self.get_position()
         if orientation is None:
             orientation = self.get_orientation()
+            
         R = self.rotation_matrix(orientation)
         L = self.L
         points = np.array([ [-L,0,0], [L,0,0], [0,-L,0], [0,L,0], [0,0,0], [0,0,0] ]).T
+
+          # Rotate only the arm points by 45 degrees about the z-axis
+        arm_rotation_matrix = self.rotation_matrix([0, 0, np.radians(45)])
+        arm_points = points[:, :4]  # Select arm points
+        rotated_arm_points = np.dot(arm_rotation_matrix, arm_points)
+        points[:, :4] = rotated_arm_points
+
         points = np.dot(R,points)
         points[0,:] += position[0]
         points[1,:] += position[1]

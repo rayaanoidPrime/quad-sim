@@ -2,7 +2,7 @@ import argparse
 import os
 import quadcopter,gui,controller
 import pandas as pd
-from LOD_parser import lod_parser,get_coeffs
+from LOD_parser import get_cm_df, lod_parser,get_coeffs
 from Mass_props_parser import mass_props_parser
 from Vspaero_parser import vsp_parser
 from Polar_parser import polar_parser
@@ -19,8 +19,8 @@ def Point2Point():
     input_df = vsp_parser(vspaero_filepath)
     polar_df = polar_parser(polar_filepath)
 
-    Sref = input_df['Sref'][0]
-    Cref = input_df['Cref'][0]
+    Sref = 0.08
+    Cref = 0.15
     rho = input_df['Rho'][0]
     Vinf = input_df['Vinf'][0]
     m = tot_mass_props_df["Mass"]
@@ -34,14 +34,15 @@ def Point2Point():
     Ixz = tot_mass_props_df["Ixz"]
     Iyz = tot_mass_props_df["Iyz"]
 
-    aero_df = get_coeffs(x_cg , LOD_df)
+    aero_df = get_coeffs(x_cg , LOD_df , wing_mass_props_df)
+    cm_df = get_cm_df(LOD_df)
 
     # Set goals to go to
     GOALS = [(1,1,1),(1,2,4),(-1,-1,2),(-1,1,4)]
     YAWS = [0,3.14,-1.54,1.54]
     # Define the quadcopters
-    QUADCOPTER={'position':[2,-2,3],'orientation':[-0.523599/3,0,0],'L':0.3,'r':0.1,'prop_size':[10,4.5],'weight':3.2 , 
-                'aero_df':aero_df , 'polar_df': polar_df,  'cg':[x_cg,y_cg,z_cg] , 'rho' : rho , 'Vinf' : Vinf , 'Sref' : Sref , 'Cref' : Cref}
+    QUADCOPTER={'position':[2,0,3],'orientation':[0,-0.523599/6,0],'L':0.3,'r':0.1,'prop_size':[10,4.5],'weight':4 , 'cm_df' : cm_df, 'AoI':0,
+                'aero_df':aero_df , 'polar_df': polar_df,  'cg':[x_cg,y_cg,z_cg] , 'rho' : rho , 'Vinf' : Vinf , 'Sref' : Sref , 'Cref' : Cref , 'I':[Ixx, Iyy, Izz]}
     # Controller parameters
     CONTROLLER_PARAMETERS = {'Motor_limits':[4000,10000],
                         'Tilt_limits':[-10,10],

@@ -12,7 +12,7 @@ def parse_text(text):
         elif not line.strip():
             break
         else:
-            data.append(line.split())
+            data.append(line.split()[:len(columns)])
 
 
     df = pd.DataFrame(data, columns=columns)
