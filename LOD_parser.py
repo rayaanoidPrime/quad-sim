@@ -125,7 +125,7 @@ def get_cm_df(input_df):
     return output_df
 
 
-def get_coeffs(x_cg , df_sorted , wing_mass_props_df):
+def get_coeffs(df_sorted ):
     df = df_sorted
 
     # Step 1: Group by 'Comp'
@@ -133,29 +133,31 @@ def get_coeffs(x_cg , df_sorted , wing_mass_props_df):
 
     # Step 2 and 3: Calculate Cmac and x_ac and dCl_dalpha and CL_0 for each group
     for comp, group in groups:
-        CL_1 = group['CL'].iloc[0]
+        # CL_1 = group['CL'].iloc[0]
         # CL_2 = group['CL'].iloc[1]
-        CL_2 = 0
-        Cmy_1 = group['Cmy'].iloc[0]
+     
+        # Cmy_1 = group['Cmy'].iloc[0]
         # Cmy_2 = group['Cmy'].iloc[1]
-        Cmy_2 = 0
-        AoA_1 = group['AoA'].iloc[0]
+   
+        # AoA_1 = group['AoA'].iloc[0]
         # AoA_2 = group['AoA'].iloc[1]
-        AoA_2 = 0
+       
+        aoa = group['AoA']
+        cl = group['CL']
         
-        dCl_dalpha = (CL_1 - CL_2)/(AoA_1 - AoA_2)
-        CL_0 = CL_1 - dCl_dalpha*AoA_1
-        Cmac = (CL_1 * Cmy_2 - CL_2 * Cmy_1) / (CL_1 - CL_2)
-        x_ac = wing_mass_props_df.iloc[comp-1]['cgX']
+        # Calculate the slope and y-intercept using np.polyfit
+        dCl_dalpha, CL_0 = np.polyfit(aoa, cl, 1)
+        # Cmac = (CL_1 * Cmy_2 - CL_2 * Cmy_1) / (CL_1 - CL_2)
+        # x_ac = wing_mass_props_df.iloc[comp-1]['cgX']
         
-        df.loc[df['Comp'] == comp, 'Cmac'] = Cmac
-        df.loc[df['Comp'] == comp, 'x_ac'] = x_ac
+        # df.loc[df['Comp'] == comp, 'Cmac'] = Cmac
+        # df.loc[df['Comp'] == comp, 'x_ac'] = x_ac
         df.loc[df['Comp'] == comp , 'dCl_dalpha'] = dCl_dalpha
         df.loc[df['Comp'] == comp, 'CL_0'] = CL_0
 
     # Step 4: Create the new dataframe with the desired columns
     result_df = df.drop_duplicates('Comp').reset_index(drop=True)
-    result_df = result_df[['Comp', 'Component-Name', 'Cmac', 'x_ac', 'AoA', 'CL', 'CDi','dCl_dalpha','CL_0' ]]
+    result_df = result_df[['Comp', 'Component-Name', 'AoA', 'CL', 'CDi','dCl_dalpha','CL_0' ]]
     return result_df
 
 

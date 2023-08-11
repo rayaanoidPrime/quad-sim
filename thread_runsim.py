@@ -19,8 +19,8 @@ def Point2Point():
     input_df = vsp_parser(vspaero_filepath)
     polar_df = polar_parser(polar_filepath)
 
-    Sref = 0.08
-    Cref = 0.15
+    Sref = input_df['Sref'][0]
+    Cref = input_df['Cref'][0]
     rho = input_df['Rho'][0]
     Vinf = input_df['Vinf'][0]
     m = tot_mass_props_df["Mass"]
@@ -34,7 +34,7 @@ def Point2Point():
     Ixz = tot_mass_props_df["Ixz"]
     Iyz = tot_mass_props_df["Iyz"]
 
-    aero_df = get_coeffs(x_cg , LOD_df , wing_mass_props_df)
+    aero_df = get_coeffs(LOD_df )
     cm_df = get_cm_df(LOD_df)
 
     # Set goals to go to

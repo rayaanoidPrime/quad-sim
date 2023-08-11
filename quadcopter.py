@@ -17,7 +17,7 @@ class Propeller():
         # From http://www.electricrcaircraftguy.com/2013/09/propeller-static-dynamic-thrust-equation.html
         # self.thrust = 4.392e-8 * self.speed * math.pow(self.dia,3.5)/(math.sqrt(self.pitch))
         # self.thrust = self.thrust*(4.23e-4 * self.speed * self.pitch)
-        self.thrust = 9.6
+        self.thrust = 9.81
 
 class Quadcopter():
     # State space representation: [x y z x_dot y_dot z_dot theta phi gamma theta_dot phi_dot gamma_dot]
@@ -31,8 +31,6 @@ class Quadcopter():
         self.no_of_aero_surfaces = self.aero_df.shape[0]
         self.cg = quad['cg']
         self.rho = quad['rho']
-        self.Vinf = 10
-        self.qinf = 0.5*self.rho*self.Vinf*self.Vinf
         self.Sref = quad['Sref']
         self.Cref = quad['Cref']
         self.L = quad['L']
@@ -44,18 +42,21 @@ class Quadcopter():
         self.time = datetime.datetime.now()
         self.state = np.zeros(12)
         self.state[0:3] = quad['position']
-        # self.state[3] = -3
+        self.state[3] = -2 # Initial speed of quad in x dir 
         self.state[6:9] = quad['orientation']
+        #wind model
+        self.Vinf = self.state[3]
+        self.qinf = 0.5*self.rho*self.Vinf*self.Vinf
         self.m1 = Propeller(quad['prop_size'][0],quad['prop_size'][1])
         self.m2 = Propeller(quad['prop_size'][0],quad['prop_size'][1])
         self.m3 = Propeller(quad['prop_size'][0],quad['prop_size'][1])
         self.m4 = Propeller(quad['prop_size'][0],quad['prop_size'][1])
         # From Quadrotor Dynamics and Control by Randal Beard
-        ixx=((2*quad['weight']*quad['r']**2)/5)+(2*quad['weight']*quad['L']**2)
-        # ixx = quad['I'][0]
+        # ixx=((2*quad['weight']*quad['r']**2)/5)+(2*quad['weight']*quad['L']**2)
+        ixx = quad['I'][0]
         iyy=ixx
-        izz=((2*quad['weight']*quad['r']**2)/5)+(4*quad['weight']*quad['L']**2)
-        # izz = quad['I'][2]
+        # izz=((2*quad['weight']*quad['r']**2)/5)+(4*quad['weight']*quad['L']**2)
+        izz = quad['I'][2]
         self.I = np.array([[ixx,0,0],[0,iyy,0],[0,0,izz]])
         self.invI = np.linalg.inv(self.I)
         self.run = True
@@ -80,7 +81,7 @@ class Quadcopter():
     def get_lift(self , aero_df):
         L = 0.0 
         for i in range(len(aero_df)):
-            AoA = self.get_orientation()[0]
+            AoA = self.get_orientation()[1] + self.AoI
             dCl_dalpha = aero_df.iloc[i]["dCl_dalpha"]
             CL_0 = aero_df.iloc[i]["CL_0"]
             L += (dCl_dalpha*AoA + CL_0)*self.qinf*self.Sref
@@ -106,7 +107,7 @@ class Quadcopter():
         for i in range(len(cm_df)):
             AoA = self.get_orientation()[1] + self.AoI
             M += (cm_df.iloc[i]['Slope']*AoA + cm_df.iloc[i]['Y-Intercept'])*self.qinf*self.Sref*self.Cref 
-        return -0.553243443
+        return M
         
 
     def state_dot(self, time, state):
@@ -143,7 +144,7 @@ class Quadcopter():
         self.state = self.ode.integrate(self.ode.t + dt)
         self.state[6:9] = self.wrap_angle(self.state[6:9])
         self.state[2] = max(0,self.state[2])
-        self.Vinf = 10
+        self.Vinf = self.state[3]
         self.qinf = 0.5*self.rho*self.Vinf*self.Vinf
         
 
