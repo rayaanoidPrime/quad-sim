@@ -66,9 +66,9 @@ Sref , Cref = Programmatically obtained from openVSP
 
 ## Kinetic Equations - 
 
-1)
+1)![Alt text](equations/1.jpeg)
  
-2)
+2)![Alt text](equations/.jpeg)
 
  
 
