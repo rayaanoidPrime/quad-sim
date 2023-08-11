@@ -90,9 +90,15 @@ Sref , Cref = Programmatically obtained from openVSP
  
 
 ## Modeling Lift and Moment due to Winged Surfaces
-The lift and moment coefficients for each of the aerodynamic surfaces are programmatically obtained from openVSP files of type .lod , .polar. The data from these files are then arranged in the form of a Pandas dataframe for each winged component. During state update of the quad , the total lift and the total moment on the model due to the contributions of all the winged components are calculated in the following way -
-●	A best fit line is formulated from the data points in the OpenVSP Cmy vs alpha and CL vs alpha curves for each winged component. (OpenVSP calculates Cmy about the cg of the model geometry).
-●	The effective AoA for each winged component is calculated based on the pitch angle (Theta value of state ) of the model and the incidence angle of the winged component.
-●	From the best fit line , the Cmy and CL for the effective AoA of each winged component is obtained and Lift = CL*qinf*Sref and Moment = Cmy*qinf*Sref*Cref is calculated for each component.
-●	Total lift and moment contributions to the system by all the winged components is calculated by summing lift and moment about cg for each component.
-●	These are then used in the Newton-Euler equations. 
+The lift and moment coefficients for each of the aerodynamic surfaces are programmatically obtained from openVSP files of type `.lod` and `.polar`. The data from these files are then organized into Pandas dataframes for each winged component. During the state update of the quad, the total lift and the total moment on the model due to the contributions of all the winged components are calculated in the following way:
+
+- A best fit line is formulated from the data points in the OpenVSP `Cmy` vs. alpha and `CL` vs. alpha curves for each winged component. (OpenVSP calculates `Cmy` about the center of gravity (`cg`) of the model geometry).
+
+- The effective Angle of Attack (AoA) for each winged component is calculated based on the pitch angle (`Theta` value of state) of the model and the incidence angle of the winged component.
+
+- From the best fit line, the `Cmy` and `CL` for the effective AoA of each winged component are obtained. Lift = `CL * qinf * Sref` and Moment = `Cmy * qinf * Sref * Cref` are calculated for each component.
+
+- Total lift and moment contributions to the system by all the winged components are calculated by summing lift and moment about `cg` for each component.
+
+- These values are then used in the Newton-Euler equations.
+
