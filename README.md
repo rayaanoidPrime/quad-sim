@@ -68,7 +68,7 @@ Sref , Cref = Programmatically obtained from openVSP
 
 1)![Alt text](equations/1.jpeg)
  
-2)![Alt text](equations/.jpeg)
+2)![Alt text](equations/2.jpeg)
 
  
 
@@ -83,10 +83,10 @@ Sref , Cref = Programmatically obtained from openVSP
 ## Newton-Euler Equations
 
 
-1)
+1)![Alt text](equations/3.jpeg)
  
 
-2)
+2)![Alt text](equations/4.jpeg)
  
 
 ## Modeling Lift and Moment due to Winged Surfaces
